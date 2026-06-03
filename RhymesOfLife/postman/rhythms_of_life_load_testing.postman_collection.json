@@ -1,0 +1,1194 @@
+{
+  "info": {
+    "_postman_id": "1c4f1e9f-9e54-4f98-b970-2c1eb7a02001",
+    "name": "Rhythms of Life Load Testing",
+    "description": "Semi-automated Postman collection for load and performance testing of the Rhythms of Life Django portal. The collection uses real routes from base.urls, blog.urls, and RhymesOfLife.urls. Run folders separately for public, authenticated user, doctor, and staff scenarios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const csrfToken = pm.environment.get(\"csrf_token\");",
+          "const sessionId = pm.environment.get(\"sessionid\");",
+          "",
+          "if (csrfToken && !pm.request.headers.has(\"X-CSRFToken\")) {",
+          "    pm.request.headers.add({ key: \"X-CSRFToken\", value: csrfToken });",
+          "}",
+          "",
+          "if (csrfToken && !pm.request.headers.has(\"Cookie\")) {",
+          "    let cookieValue = `csrftoken=${csrfToken}`;",
+          "    if (sessionId) {",
+          "        cookieValue += `; sessionid=${sessionId}`;",
+          "    }",
+          "    pm.request.headers.add({ key: \"Cookie\", value: cookieValue });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Public Pages",
+      "description": "Public entry points used before authentication.",
+      "item": [
+        {
+          "name": "GET Public Home",
+          "request": {
+            "method": "GET",
+            "description": "Load the public landing page at /. Covers the public home page route from base.urls -> home_public.",
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Public Home\", pm.response.code, pm.response.responseTime);",
+                  "const csrfToken = pm.cookies.get(\"csrftoken\");",
+                  "if (csrfToken) pm.environment.set(\"csrf_token\", csrfToken);",
+                  "const sessionId = pm.cookies.get(\"sessionid\");",
+                  "if (sessionId) pm.environment.set(\"sessionid\", sessionId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Login Page",
+          "request": {
+            "method": "GET",
+            "description": "Open the real login page at /login/. This request is required to receive a fresh csrftoken cookie for Django session authentication.",
+            "url": {
+              "raw": "{{base_url}}/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Login Page\", pm.response.code, pm.response.responseTime);",
+                  "const csrfToken = pm.cookies.get(\"csrftoken\");",
+                  "pm.test(\"CSRF token cookie is available\", function () {",
+                  "    pm.expect(csrfToken).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (csrfToken) pm.environment.set(\"csrf_token\", csrfToken);",
+                  "const sessionId = pm.cookies.get(\"sessionid\");",
+                  "if (sessionId) pm.environment.set(\"sessionid\", sessionId);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Regular User Flow",
+      "description": "Requests for a verified and fully onboarded regular user account.",
+      "item": [
+        {
+          "name": "POST Login as User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "Authenticate through the real /login/ route using Django session auth. This request uses AJAX mode so successful login returns JSON instead of a redirect page.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{login_identity}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "ajax",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "next",
+                  "value": "/ma/",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"POST Login as User\", pm.response.code, pm.response.responseTime);",
+                  "const csrfToken = pm.cookies.get(\"csrftoken\");",
+                  "if (csrfToken) pm.environment.set(\"csrf_token\", csrfToken);",
+                  "const sessionId = pm.cookies.get(\"sessionid\");",
+                  "pm.test(\"Session cookie is available\", function () {",
+                  "    pm.expect(sessionId).to.be.a(\"string\").and.not.empty;",
+                  "});",
+                  "if (sessionId) pm.environment.set(\"sessionid\", sessionId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Profile Page",
+          "request": {
+            "method": "GET",
+            "description": "Load the authenticated profile page at /profile/. Covers profile rendering for a logged-in user.",
+            "url": {
+              "raw": "{{base_url}}/profile/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Profile Page\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Health Dashboard",
+          "request": {
+            "method": "GET",
+            "description": "Load the main health dashboard at /my-health/.",
+            "url": {
+              "raw": "{{base_url}}/my-health/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my-health",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Health Dashboard\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Medical Exams and Documents Page",
+          "request": {
+            "method": "GET",
+            "description": "Load the medical exams and documents page at /my-documents/. This is the closest real route for the medical exams list requirement.",
+            "url": {
+              "raw": "{{base_url}}/my-documents/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my-documents",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Medical Exams and Documents Page\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Create Medical Exam with External Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "Create a medical exam through the real /my-documents/ POST handler using an external link instead of a local file. This avoids machine-specific file paths while still exercising the create exam flow.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "exam_date",
+                  "value": "{{exam_date}}",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "{{exam_description}}",
+                  "type": "text"
+                },
+                {
+                  "key": "external_url",
+                  "value": "{{exam_external_url}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/my-documents/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my-documents",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 5000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "console.log(\"POST Create Medical Exam with External Link\", pm.response.code, pm.response.responseTime);",
+                  "let jsonData = {};",
+                  "try { jsonData = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Medical exam create response is ok\", function () {",
+                  "    pm.expect(jsonData.status).to.eql(\"ok\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Wellness Page",
+          "request": {
+            "method": "GET",
+            "description": "Load the wellness diary page at /my-wellness/.",
+            "url": {
+              "raw": "{{base_url}}/my-wellness/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my-wellness",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Wellness Page\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Medications Page",
+          "request": {
+            "method": "GET",
+            "description": "Load the medications page at /my-health/medications/.",
+            "url": {
+              "raw": "{{base_url}}/my-health/medications/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my-health",
+                "medications",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Medications Page\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Feed Page",
+          "request": {
+            "method": "GET",
+            "description": "Load the main social feed page at /ma/.",
+            "url": {
+              "raw": "{{base_url}}/ma/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ma",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Feed Page\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Create Feed Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "X-Requested-With",
+                "value": "XMLHttpRequest"
+              }
+            ],
+            "description": "Create a social post through the real /posts/create/ route. AJAX mode is used because this view returns JSON only for XMLHttpRequest requests.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "text",
+                  "value": "{{post_text}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/posts/create/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "create",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 5000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "console.log(\"POST Create Feed Post\", pm.response.code, pm.response.responseTime);",
+                  "let jsonData = {};",
+                  "try { jsonData = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Create post returned ok\", function () {",
+                  "    pm.expect(jsonData.ok).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Articles List",
+          "request": {
+            "method": "GET",
+            "description": "Load the article listing route at /articles/. This is served through Wagtail and requires a configured and published blog index page in the current database.",
+            "url": {
+              "raw": "{{base_url}}/articles/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "articles",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Articles List\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Notifications Page",
+          "request": {
+            "method": "GET",
+            "description": "Load the notifications page at /notifications/. This page also marks unread notifications as read.",
+            "url": {
+              "raw": "{{base_url}}/notifications/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Notifications Page\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Help Request Page",
+          "request": {
+            "method": "GET",
+            "description": "Load the help request form page at /help/request/.",
+            "url": {
+              "raw": "{{base_url}}/help/request/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "help",
+                "request",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Help Request Page\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Create Help Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "Submit the help request form through the real /help/request/ route with valid field names from help_request_view.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "email",
+                  "value": "{{help_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "telegram",
+                  "value": "{{help_telegram}}",
+                  "type": "text"
+                },
+                {
+                  "key": "full_name",
+                  "value": "{{help_full_name}}",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "{{help_phone}}",
+                  "type": "text"
+                },
+                {
+                  "key": "birth_date",
+                  "value": "{{help_birth_date}}",
+                  "type": "text"
+                },
+                {
+                  "key": "city",
+                  "value": "{{help_city}}",
+                  "type": "text"
+                },
+                {
+                  "key": "syndrome",
+                  "value": "{{help_syndrome}}",
+                  "type": "text"
+                },
+                {
+                  "key": "gen",
+                  "value": "{{help_gen}}",
+                  "type": "text"
+                },
+                {
+                  "key": "medications",
+                  "value": "{{help_medications}}",
+                  "type": "text"
+                },
+                {
+                  "key": "message",
+                  "value": "{{help_message}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/help/request/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "help",
+                "request",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 302\", function () {",
+                  "    pm.response.to.have.status(302);",
+                  "});",
+                  "pm.test(\"Response time is under 5000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "console.log(\"POST Create Help Request\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Logout User",
+          "request": {
+            "method": "POST",
+            "description": "End the current Django session through the real /logout/ route before switching to another role.",
+            "url": {
+              "raw": "{{base_url}}/logout/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "logout",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 302\", function () {",
+                  "    pm.response.to.have.status(302);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"POST Logout User\", pm.response.code, pm.response.responseTime);",
+                  "pm.environment.unset(\"sessionid\");"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Doctor Flow",
+      "description": "Requests that require a doctor or external doctor account with patient list access.",
+      "item": [
+        {
+          "name": "GET Login Page for Doctor",
+          "request": {
+            "method": "GET",
+            "description": "Refresh the CSRF token before doctor login.",
+            "url": {
+              "raw": "{{base_url}}/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Login Page for Doctor\", pm.response.code, pm.response.responseTime);",
+                  "const csrfToken = pm.cookies.get(\"csrftoken\");",
+                  "if (csrfToken) pm.environment.set(\"csrf_token\", csrfToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Login as Doctor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "Authenticate as doctor or external doctor. Use a role that can open /patients/.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{doctor_login_identity}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{doctor_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "ajax",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "next",
+                  "value": "/patients/",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"POST Login as Doctor\", pm.response.code, pm.response.responseTime);",
+                  "const sessionId = pm.cookies.get(\"sessionid\");",
+                  "if (sessionId) pm.environment.set(\"sessionid\", sessionId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Doctor Patients List",
+          "request": {
+            "method": "GET",
+            "description": "Load the patient list at /patients/. Requires the base.view_patient_list permission or staff privileges.",
+            "url": {
+              "raw": "{{base_url}}/patients/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Doctor Patients List\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Access Requests Page",
+          "request": {
+            "method": "GET",
+            "description": "Load the patient access request review page at /access/requests/ for the current patient or doctor workflow.",
+            "url": {
+              "raw": "{{base_url}}/access/requests/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "access",
+                "requests",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Access Requests Page\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Logout Doctor",
+          "request": {
+            "method": "POST",
+            "description": "End the doctor session before switching to the staff flow.",
+            "url": {
+              "raw": "{{base_url}}/logout/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "logout",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 302\", function () {",
+                  "    pm.response.to.have.status(302);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"POST Logout Doctor\", pm.response.code, pm.response.responseTime);",
+                  "pm.environment.unset(\"sessionid\");"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Staff Flow",
+      "description": "Requests that require staff or a user with the related permissions for staff tools.",
+      "item": [
+        {
+          "name": "GET Login Page for Staff",
+          "request": {
+            "method": "GET",
+            "description": "Refresh the CSRF token before staff login.",
+            "url": {
+              "raw": "{{base_url}}/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Login Page for Staff\", pm.response.code, pm.response.responseTime);",
+                  "const csrfToken = pm.cookies.get(\"csrftoken\");",
+                  "if (csrfToken) pm.environment.set(\"csrf_token\", csrfToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Login as Staff",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "description": "Authenticate as staff. Use a role that can open /staff/help-requests/ and optionally /staff/notify/.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{staff_login_identity}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{staff_password}}",
+                  "type": "text"
+                },
+                {
+                  "key": "ajax",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "next",
+                  "value": "/staff/help-requests/",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"POST Login as Staff\", pm.response.code, pm.response.responseTime);",
+                  "const sessionId = pm.cookies.get(\"sessionid\");",
+                  "if (sessionId) pm.environment.set(\"sessionid\", sessionId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Staff Help Requests Page",
+          "request": {
+            "method": "GET",
+            "description": "Load the staff help requests page at /staff/help-requests/. Requires base.view_help_requests or staff privileges.",
+            "url": {
+              "raw": "{{base_url}}/staff/help-requests/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "staff",
+                "help-requests",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Staff Help Requests Page\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Staff Notify Page",
+          "request": {
+            "method": "GET",
+            "description": "Load the staff notification page at /staff/notify/. Requires base.send_notifications or staff privileges.",
+            "url": {
+              "raw": "{{base_url}}/staff/notify/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "staff",
+                "notify",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"GET Staff Notify Page\", pm.response.code, pm.response.responseTime);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Logout Staff",
+          "request": {
+            "method": "POST",
+            "description": "End the staff session after the staff-only checks.",
+            "url": {
+              "raw": "{{base_url}}/logout/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "logout",
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 302\", function () {",
+                  "    pm.response.to.have.status(302);",
+                  "});",
+                  "pm.test(\"Response time is under 3000 ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "console.log(\"POST Logout Staff\", pm.response.code, pm.response.responseTime);",
+                  "pm.environment.unset(\"sessionid\");"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

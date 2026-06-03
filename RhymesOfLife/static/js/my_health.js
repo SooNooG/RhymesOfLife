@@ -662,7 +662,7 @@
       div.className = "file-card d-flex justify-content-between align-items-center border p-2 mb-2 rounded";
       div.dataset.name = file.name; div.dataset.size = file.size;
       div.innerHTML = `
-        <span class="me-2">ЁЯУО <strong>${file.name}</strong></span>
+        <span class="me-2">Файл: <strong>${file.name}</strong></span>
         <button type="button" class="btn btn-sm btn-outline-danger remove-file-btn" data-name="${file.name}" data-size="${file.size}" aria-label="${i18n.removeFile || gettext("Remove file")}">тЬЦ</button>
       `;
       fileList.appendChild(div);
@@ -772,7 +772,7 @@
               const div = document.createElement("div");
               div.className = "file-card d-flex justify-content-between align-items-center border p-2 mb-2 rounded";
               div.innerHTML = `
-                <a href="${doc.url}" target="_blank" class="text-decoration-none me-2" rel="noopener noreferrer">ЁЯУО <strong>${doc.name}</strong></a>
+                <a href="${doc.url}" target="_blank" class="text-decoration-none me-2" rel="noopener noreferrer">Файл: <strong>${doc.name}</strong></a>
                 <button class="btn btn-sm btn-outline-danger remove-existing-file-btn" data-id="${doc.id}" aria-label="${i18n.removeFile || gettext("Remove file")}">тЬЦ</button>
               `;
               fileList && fileList.appendChild(div);
